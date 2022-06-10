@@ -13,8 +13,8 @@
 const double LARGE_NUM = 3e+10;
 
 enum set {
-    P1,
-    P2
+    P1 = 0,
+    P2 = 1
 };
 
 typedef struct point {
@@ -23,7 +23,7 @@ typedef struct point {
 } point_t;
 
 typedef struct optimal_solution {
-    std::vector<set> s_vec;
+    std::vector<bool> s_vec;
     double min_cost;
     bool is_set;
 } opt_data;
@@ -46,13 +46,13 @@ double len(point_t p1, point_t p2) {
     return sqrt(dx * dx + dy * dy);
 }
 
-double len_p(std::vector<set> v, point_t * p, int n) {
+double len_p(std::vector<bool> v, point_t * p, int n) {
 
     std::vector<point_t> p1;
     std::vector<point_t> p2;
     
     for(int i = 0; i < n; ++i) {
-        if(v[i] == P1) {
+        if(v[i] == true) {
             p1.push_back(p[i]);
         }
         else {
@@ -98,6 +98,7 @@ void init_p(int n, point_t * p) {
 
         min_b += x;
     }
+    
 }
 
 opt_data ** init_dp(int n) {
@@ -124,21 +125,21 @@ void free_dp(opt_data ** dp, int n) {
     delete [] dp;
 }
 
-void print_partition(std::vector<set> v) {
+void print_partition(std::vector<bool> v) {
 
     int n = (int) v.size();
     
     for(int i = 0; i < n; ++i) {
-        if(v[i] == P1) {
+        if(v[i] == true) {
             std::cout << "element " << i << " is in " << v[i] << std::endl;
         }
-        if(v[i] == P2) {
+        if(v[i] == false) {
             std::cout << "element " << i << " is in " << v[i] << std::endl;
         }
     }
 }
 
-bool part_guard(std::vector<set> & v) {
+bool part_guard(std::vector<bool> & v) {
     
     int n = (int) v.size();
     
@@ -146,10 +147,10 @@ bool part_guard(std::vector<set> & v) {
     int s2 = 0;
     
     for(int i = 0; i < n; ++i) {
-        if(v[i] == P1) {
+        if(v[i] == true) {
             s1++;
         }
-        if(v[i] == P2) {
+        if(v[i] == false) {
             s2++;
         }
     }
@@ -157,29 +158,24 @@ bool part_guard(std::vector<set> & v) {
     return s1 <= 1 || s2 <= 1;
 }
 
-opt_data min_cost_rec(point_t * p, int n, bool in_p1, int d, std::vector<set> v, opt_data ** dp) {
+opt_data min_cost_rec(point_t * p, int n, std::vector<bool> v, opt_data ** dp) {
     opt_data res = {};
     res.min_cost = 0.0;
     
     // Get size current data vector
     int s = (int) v.size();
     
-    // Get data from memo table if available
-    if(dp[d][in_p1].is_set) {
-        return dp[d][in_p1];
-    }
-    
     // Compute minimum length cost
     if(s < n) {
         // Pick element d and store it in P1
-        std::vector<set> v1 = v;
-        v1.push_back(P1);
-        opt_data val1 = min_cost_rec(p, n, true, s + 1, v1, dp);
+        std::vector<bool> v1 = v;
+        v1.push_back(true);
+        opt_data val1 = min_cost_rec(p, n, v1, dp);
         
         // Pick element d and store it in P2
-        std::vector<set> v2 = v;
-        v2.push_back(P2);
-        opt_data val2 = min_cost_rec(p, n, false, s + 1, v2, dp);
+        std::vector<bool> v2 = v;
+        v2.push_back(false);
+        opt_data val2 = min_cost_rec(p, n, v2, dp);
         res = min(val1, val2);
     }
     
@@ -198,25 +194,25 @@ opt_data min_cost_rec(point_t * p, int n, bool in_p1, int d, std::vector<set> v,
         return res;
     }
     
-    // Store data in memo table
-    dp[d][in_p1] = res;
-    dp[d][in_p1].is_set = true;
-    
     return res;
 }
 
 opt_data min_cost_seq(point_t * p, int n) {
     
-    std::vector<set> v;
+    std::vector<bool> v;
     
     // Allocate space for memo table
     opt_data ** dp = init_dp(n + 1);
     
     // Compute minimum cost when first element is stored in P1
-    opt_data val1 = min_cost_rec(p, n, true, 0, v, dp);
-    
+    std::vector<bool> v1;
+    v1.push_back(true);
+    opt_data val1 = min_cost_rec(p, n, v1, dp);
+ 
     // Compute minimum cost when first element is stored in P2
-    opt_data val2 = min_cost_rec(p, n, false, 0, v, dp);
+    std::vector<bool> v2;
+    v2.push_back(false);
+    opt_data val2 = min_cost_rec(p, n, v2, dp);
     
     // Free memo table space
     free_dp(dp, n + 1);
@@ -227,7 +223,7 @@ opt_data min_cost_seq(point_t * p, int n) {
 int main(int argc, const char * argv[]) {
 
     // Number of points
-    int n = 10;
+    int n = 5;
     
     // Declare and initialize points and solution array
     point_t * p = new point_t[n];
