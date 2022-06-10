@@ -10,6 +10,8 @@
 #include <random>
 #include <time.h>
 
+const double LARGE_NUM = 3e+10;
+
 enum set {
     P1,
     P2
@@ -23,6 +25,7 @@ typedef struct point {
 typedef struct optimal_solution {
     std::vector<set> s_vec;
     double min_cost;
+    bool is_set;
 } opt_data;
 
 opt_data min(opt_data o1, opt_data o2) {
@@ -77,22 +80,22 @@ double len_p(std::vector<set> v, point_t * p, int n) {
 void init_p(int n, point_t * p) {
     
     double min_x = 0;
-    double max_x = 0.5;
+    double max_x = 10.5;
     double min_b = 0.0;
-    double min_y = 0.0;
-    double max_y = 1.0;
+    double min_y = -10.0;
+    double max_y = 10.0;
     
     srand((unsigned) time(NULL));
-    
+
     for(int i = 0; i < n; ++i) {
         double f1 = (double) rand() / RAND_MAX;
         double x = min_b + f1 * (max_x - min_x);
         double f2 = (double) rand() / RAND_MAX;
         double y = min_y + f2 * (max_y - min_y);
-        
+
         p[i].x = x;
         p[i].y = y;
-        
+
         min_b += x;
     }
 }
@@ -105,6 +108,8 @@ opt_data ** init_dp(int n) {
         dp[i] = new opt_data[2];
         dp[i][0].min_cost = 0.0;
         dp[i][1].min_cost = 0.0;
+        dp[i][0].is_set = false;
+        dp[i][1].is_set = false;
     }
     
     return dp;
@@ -119,6 +124,39 @@ void free_dp(opt_data ** dp, int n) {
     delete [] dp;
 }
 
+void print_partition(std::vector<set> v) {
+
+    int n = (int) v.size();
+    
+    for(int i = 0; i < n; ++i) {
+        if(v[i] == P1) {
+            std::cout << "element " << i << " is in " << v[i] << std::endl;
+        }
+        if(v[i] == P2) {
+            std::cout << "element " << i << " is in " << v[i] << std::endl;
+        }
+    }
+}
+
+bool part_guard(std::vector<set> & v) {
+    
+    int n = (int) v.size();
+    
+    int s1 = 0;
+    int s2 = 0;
+    
+    for(int i = 0; i < n; ++i) {
+        if(v[i] == P1) {
+            s1++;
+        }
+        if(v[i] == P2) {
+            s2++;
+        }
+    }
+    
+    return s1 <= 1 || s2 <= 1;
+}
+
 opt_data min_cost_rec(point_t * p, int n, bool in_p1, int d, std::vector<set> v, opt_data ** dp) {
     opt_data res = {};
     res.min_cost = 0.0;
@@ -127,7 +165,7 @@ opt_data min_cost_rec(point_t * p, int n, bool in_p1, int d, std::vector<set> v,
     int s = (int) v.size();
     
     // Get data from memo table if available
-    if(dp[d][in_p1].min_cost != 0.0) {
+    if(dp[d][in_p1].is_set) {
         return dp[d][in_p1];
     }
     
@@ -136,24 +174,33 @@ opt_data min_cost_rec(point_t * p, int n, bool in_p1, int d, std::vector<set> v,
         // Pick element d and store it in P1
         std::vector<set> v1 = v;
         v1.push_back(P1);
-        opt_data val1 = min_cost_rec(p, n, true, d + 1, v1, dp);
+        opt_data val1 = min_cost_rec(p, n, true, s + 1, v1, dp);
         
         // Pick element d and store it in P2
         std::vector<set> v2 = v;
         v2.push_back(P2);
-        opt_data val2 = min_cost_rec(p, n, false, d + 1, v2, dp);
+        opt_data val2 = min_cost_rec(p, n, false, s + 1, v2, dp);
         res = min(val1, val2);
     }
     
     // Compute length cost
     if(s == n) {
-        res.min_cost = len_p(v, p, n);
-        res.s_vec = v;
+        bool len_is_one = part_guard(v);
+        if(len_is_one) {
+            res.min_cost = LARGE_NUM;
+            res.s_vec = v;
+        }
+        else {
+            res.min_cost = len_p(v, p, n);
+            res.s_vec = v;
+        }
+        
         return res;
     }
     
     // Store data in memo table
     dp[d][in_p1] = res;
+    dp[d][in_p1].is_set = true;
     
     return res;
 }
@@ -194,6 +241,8 @@ int main(int argc, const char * argv[]) {
     double len_ver = len_p(odata.s_vec, p, n);
     
     // Print results
+    print_partition(odata.s_vec);
+    
     std::cout << "minimum length cost: " << odata.min_cost << std::endl;
     std::cout << "length verification: " << len_ver << std::endl;
     
