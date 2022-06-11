@@ -6,16 +6,10 @@
 //
 
 #include <iostream>
+#include <map>
 #include <math.h>
 #include <random>
 #include <time.h>
-
-const double LARGE_NUM = 3e+10;
-
-enum set {
-    P1 = 0,
-    P2 = 1
-};
 
 typedef struct point {
     double x;
@@ -82,8 +76,8 @@ void init_p(int n, point_t * p) {
     double min_x = 0;
     double max_x = 10.5;
     double min_b = 0.0;
-    double min_y = -10.0;
-    double max_y = 10.0;
+    double min_y = -50.0;
+    double max_y = 50.0;
     
     srand((unsigned) time(NULL));
 
@@ -96,33 +90,8 @@ void init_p(int n, point_t * p) {
         p[i].x = x;
         p[i].y = y;
 
-        min_b += x;
+        min_b = x;
     }
-    
-}
-
-opt_data ** init_dp(int n) {
-    
-    opt_data ** dp = new opt_data * [n];
-    
-    for(int i = 0; i < n; ++i) {
-        dp[i] = new opt_data[2];
-        dp[i][0].min_cost = 0.0;
-        dp[i][1].min_cost = 0.0;
-        dp[i][0].is_set = false;
-        dp[i][1].is_set = false;
-    }
-    
-    return dp;
-}
-
-void free_dp(opt_data ** dp, int n) {
-    
-    for(int i = 0; i < n; ++i) {
-        delete [] dp[i];
-    }
-    
-    delete [] dp;
 }
 
 void print_partition(std::vector<bool> v) {
@@ -139,26 +108,7 @@ void print_partition(std::vector<bool> v) {
     }
 }
 
-bool part_guard(std::vector<bool> & v) {
-    
-    int n = (int) v.size();
-    
-    int s1 = 0;
-    int s2 = 0;
-    
-    for(int i = 0; i < n; ++i) {
-        if(v[i] == true) {
-            s1++;
-        }
-        if(v[i] == false) {
-            s2++;
-        }
-    }
-    
-    return s1 <= 1 || s2 <= 1;
-}
-
-opt_data min_cost_rec(point_t * p, int n, std::vector<bool> v, opt_data ** dp) {
+opt_data min_cost_rec(point_t * p, int n, std::vector<bool> v) {
     opt_data res = {};
     res.min_cost = 0.0;
     
@@ -170,26 +120,19 @@ opt_data min_cost_rec(point_t * p, int n, std::vector<bool> v, opt_data ** dp) {
         // Pick element d and store it in P1
         std::vector<bool> v1 = v;
         v1.push_back(true);
-        opt_data val1 = min_cost_rec(p, n, v1, dp);
+        opt_data val1 = min_cost_rec(p, n, v1);
         
         // Pick element d and store it in P2
         std::vector<bool> v2 = v;
         v2.push_back(false);
-        opt_data val2 = min_cost_rec(p, n, v2, dp);
+        opt_data val2 = min_cost_rec(p, n, v2);
         res = min(val1, val2);
     }
     
     // Compute length cost
     if(s == n) {
-        bool len_is_one = part_guard(v);
-        if(len_is_one) {
-            res.min_cost = LARGE_NUM;
-            res.s_vec = v;
-        }
-        else {
-            res.min_cost = len_p(v, p, n);
-            res.s_vec = v;
-        }
+        res.min_cost = len_p(v, p, n);
+        res.s_vec = v;
         
         return res;
     }
@@ -201,29 +144,13 @@ opt_data min_cost_seq(point_t * p, int n) {
     
     std::vector<bool> v;
     
-    // Allocate space for memo table
-    opt_data ** dp = init_dp(n + 1);
-    
-    // Compute minimum cost when first element is stored in P1
-    std::vector<bool> v1;
-    v1.push_back(true);
-    opt_data val1 = min_cost_rec(p, n, v1, dp);
- 
-    // Compute minimum cost when first element is stored in P2
-    std::vector<bool> v2;
-    v2.push_back(false);
-    opt_data val2 = min_cost_rec(p, n, v2, dp);
-    
-    // Free memo table space
-    free_dp(dp, n + 1);
-    
-    return min(val1, val2);
+    return min_cost_rec(p, n, v);
 }
 
 int main(int argc, const char * argv[]) {
 
     // Number of points
-    int n = 5;
+    int n = 15;
     
     // Declare and initialize points and solution array
     point_t * p = new point_t[n];
@@ -232,7 +159,7 @@ int main(int argc, const char * argv[]) {
     
     // Compute minimum cost
     opt_data odata = min_cost_seq(p, n);
-
+    
     // Verify cost
     double len_ver = len_p(odata.s_vec, p, n);
     
