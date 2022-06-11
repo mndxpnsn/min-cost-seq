@@ -100,10 +100,10 @@ void print_partition(std::vector<bool> v) {
     
     for(int i = 0; i < n; ++i) {
         if(v[i] == true) {
-            std::cout << "element " << i << " is in " << v[i] << std::endl;
+            std::cout << "element " << (i + 1) << " is in P" << (v[i] + 1) << std::endl;
         }
         if(v[i] == false) {
-            std::cout << "element " << i << " is in " << v[i] << std::endl;
+            std::cout << "element " << (i + 1) << " is in P" << (v[i] + 1) << std::endl;
         }
     }
 }
@@ -117,12 +117,12 @@ opt_data min_cost_rec(point_t * p, int n, std::vector<bool> v) {
     
     // Compute minimum length cost
     if(s < n) {
-        // Pick element d and store it in P1
+        // Pick element and store it in P1
         std::vector<bool> v1 = v;
         v1.push_back(true);
         opt_data val1 = min_cost_rec(p, n, v1);
         
-        // Pick element d and store it in P2
+        // Pick element and store it in P2
         std::vector<bool> v2 = v;
         v2.push_back(false);
         opt_data val2 = min_cost_rec(p, n, v2);
