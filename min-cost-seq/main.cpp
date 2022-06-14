@@ -22,12 +22,53 @@ typedef struct optimal_solution {
     bool is_set;
 } opt_data;
 
+double ** mat2D(int n) {
+    
+    double ** mat = new double * [n];
+    
+    for(int i = 0; i < n; ++i) {
+        mat[i] = new double[n];
+        
+        for(int j = 0; j < n; ++j) {
+            mat[i][j] = 0.0;
+        }
+    }
+    
+    return mat;
+}
+
+void free_mat2D(double ** mat, int n) {
+    
+    for(int i = 0; i < n; ++i) {
+        delete [] mat[i];
+    }
+    
+    delete [] mat;
+}
+
 opt_data min(opt_data o1, opt_data o2) {
     opt_data res = {};
     res.min_cost = 0.0;
     
     if(o1.min_cost < o2.min_cost) res = o1;
     else res = o2;
+    
+    return res;
+}
+
+double min_d(double x, double y) {
+    double res = 0.0;
+    
+    if(x == 0.0 && y > 0) {
+        return y;
+    }
+    
+    if(x > 0 && y == 0.0) {
+        return x;
+    }
+    
+    if(x < y) res = x;
+    else res = y;
     
     return res;
 }
@@ -147,6 +188,55 @@ opt_data min_cost_seq(point_t * p, int n) {
     return min_cost_rec(p, n, v);
 }
 
+double min_cost_bottom_up(point_t * p, int n) {
+    double res = 0.0;
+    
+    double ** C = mat2D(n + 1);
+    
+    C[0][1] = 0.0;
+    
+    for(int i = 2; i <= n; ++i) {
+        double sum = 0.0;
+        for(int j = 1; j < i; ++j) {
+            sum += len(p[j - 1], p[j]);
+        }
+    
+        C[0][i] = sum;
+    }
+    
+    for(int j = 2; j <= n; ++j) {
+        double cost = 0.0;
+        for(int i = 1; i < j - 1; ++i) {
+            double val = C[i][j - 1] + len(p[i - 1], p[j - 1]);
+            cost = min_d(cost, val);
+        }
+        
+        cost = min_d(cost, C[0][j - 1]);
+        
+        C[j - 1][j] = cost;
+        
+        for(int i = j + 1; i <= n; ++i) {
+            double sum = C[j - 1][i - 1] + len(p[i - 2], p[i - 1]);
+            C[j - 1][i] = sum;
+        }
+    }
+    
+    for(int i = 0; i <= n; ++i) {
+        res = min_d(res, C[i][n]);
+    }
+    
+    free_mat2D(C, n + 1);
+    
+    return res;
+}
+
+void print_points(point_t * p, int n) {
+    
+    for(int i = 0; i < n; ++i) {
+        std::cout << i << ", x: " << p[i].x << ", y: " << p[i].y << std::endl;
+    }
+}
+
 int main(int argc, const char * argv[]) {
 
     // Number of points
@@ -163,11 +253,14 @@ int main(int argc, const char * argv[]) {
     // Verify cost
     double len_ver = len_p(odata.s_vec, p, n);
     
+    double len_bottom_up = min_cost_bottom_up(p, n);
+    
     // Print results
     print_partition(odata.s_vec);
     
     std::cout << "minimum length cost: " << odata.min_cost << std::endl;
     std::cout << "length verification: " << len_ver << std::endl;
+    std::cout << "length computed bottom-up: " << len_bottom_up << std::endl;
     
     // Free allocated space
     delete [] p;
