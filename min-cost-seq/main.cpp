@@ -191,10 +191,13 @@ opt_data min_cost_seq(point_t * p, int n) {
 double min_cost_bottom_up(point_t * p, int n) {
     double res = 0.0;
     
+    // Allocate space for table
     double ** C = mat2D(n + 1);
     
+    // Base case
     C[0][1] = 0.0;
     
+    // Partition P1 ends at 0
     for(int i = 2; i <= n; ++i) {
         double sum = 0.0;
         for(int j = 1; j < i; ++j) {
@@ -205,6 +208,8 @@ double min_cost_bottom_up(point_t * p, int n) {
     }
     
     for(int j = 2; j <= n; ++j) {
+        
+        // Partition P1 ends at j - 1 and P2 ends at j
         double cost = 0.0;
         for(int i = 1; i < j - 1; ++i) {
             double val = C[i][j - 1] + len(p[i - 1], p[j - 1]);
@@ -215,16 +220,19 @@ double min_cost_bottom_up(point_t * p, int n) {
         
         C[j - 1][j] = cost;
         
+        // Point was added to P2
         for(int i = j + 1; i <= n; ++i) {
             double sum = C[j - 1][i - 1] + len(p[i - 2], p[i - 1]);
             C[j - 1][i] = sum;
         }
     }
     
+    // Compute minimum partition cost
     for(int i = 0; i <= n; ++i) {
         res = min_d(res, C[i][n]);
     }
     
+    // Free space used for table
     free_mat2D(C, n + 1);
     
     return res;
