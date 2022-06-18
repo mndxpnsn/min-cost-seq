@@ -11,6 +11,8 @@
 #include <random>
 #include <time.h>
 
+int ops = 0;
+
 typedef struct point {
     double x;
     double y;
@@ -292,14 +294,13 @@ opt_data min_cost_seq(point_t * p, int n) {
     return min_cost_rec(p, n, v);
 }
 
-int ops = 0;
-
 void make_sol(double ** C, int n, point_t * p, int lf, int j, bool flipped, std::vector<point_t> & P1, std::vector<point_t> & P2) {
 
     int cut = j;
 
     ops++;
 
+    // Add all elements to the right of lf
     for(int i = j; i > lf; --i) {
         if(!flipped) {
             P2.push_back(p[i]);
@@ -309,6 +310,7 @@ void make_sol(double ** C, int n, point_t * p, int lf, int j, bool flipped, std:
         }
     }
 
+    // Compute partition transition index
     double bounds = 3e8;
 
     int jj = lf + 1;
@@ -325,6 +327,7 @@ void make_sol(double ** C, int n, point_t * p, int lf, int j, bool flipped, std:
         cut = 0;
     }
 
+    // Add all remaining elements to partition
     if(cut == 0 && !flipped) {
 
         for(int i = 1; i <= jj - 1; ++i) {
@@ -343,8 +346,7 @@ void make_sol(double ** C, int n, point_t * p, int lf, int j, bool flipped, std:
         return;
     }
 
-    bool is_flipped = !flipped;
-    make_sol(C, n, p, cut, jj - 1, is_flipped, P1, P2);
+    make_sol(C, n, p, cut, jj - 1, !flipped, P1, P2);
 }
 
 void make_sol_wrap(double ** C, int n, point_t * p, std::vector<point_t> & P1, std::vector<point_t> & P2) {
@@ -460,7 +462,7 @@ int main(int argc, const char * argv[]) {
     // Number of points
     int n = 31;
     
-    // Declare and initialize points and solution array
+    // Declare and initialize points and partition arrays
     point_t * p = new point_t[n];
     
     init_p(n, p);
